@@ -16,8 +16,10 @@ limitations under the License.
 package action
 
 import (
+	"bytes"
 	"flag"
 	"fmt"
+	"helm.sh/helm/v3/pkg/postrender"
 	"io"
 	"testing"
 
@@ -360,4 +362,24 @@ func TestGetVersionSet(t *testing.T) {
 	if vs.Has("nosuchversion/v1") {
 		t.Error("Non-existent version is reported found.")
 	}
+}
+
+type mockPostRenderer struct {
+	postrender.PostRenderer
+}
+
+func (pr *mockPostRenderer) Run(renderedManifests *bytes.Buffer) (modifiedManifests *bytes.Buffer, err error) {
+	return renderedManifests, err
+}
+
+func TestRunPostRenderer(t *testing.T) {
+	files := map[string]string{
+		"pod.yaml": manifestWithHook,
+	}
+
+	postRenderedFiles, err := runPostRenderer(&mockPostRenderer{}, files)
+	assert.NoError(t, err)
+
+	assert.Equal(t, files, postRenderedFiles)
+	fmt.Printf("%v", postRenderedFiles)
 }
